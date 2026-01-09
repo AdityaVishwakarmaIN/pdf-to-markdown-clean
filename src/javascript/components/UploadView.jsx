@@ -1,57 +1,146 @@
 import React from 'react';
+import Dropzone from 'react-dropzone';
 
-import Alert from 'react-bootstrap/lib/Alert'
-import Dropzone from 'react-dropzone'
-import FaCloudUpload from 'react-icons/lib/fa/cloud-upload'
+// SVG Icons as components
+const UploadIcon = () => (
+    <svg className="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M7 10V9C7 6.23858 9.23858 4 12 4C14.7614 4 17 6.23858 17 9V10C19.2091 10 21 11.7909 21 14C21 16.2091 19.2091 18 17 18H16M12 12V21M12 12L15 15M12 12L9 15" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+);
+
+const FileIcon = () => (
+    <svg className="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M14 2V8H20" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+);
+
+const CloseIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M18 6L6 18M6 6L18 18" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+);
 
 export default class UploadView extends React.Component {
 
     static propTypes = {
-        uploadPdfFunction: React.PropTypes.func.isRequired,
+        storeFilesFunction: React.PropTypes.func.isRequired,
     };
 
     constructor(props) {
         super(props);
         this.state = {
-            uploadPdfFunction: props.uploadPdfFunction,
+            selectedFiles: [],
+            isDragActive: false
         };
     }
 
-    onDrop(files) {
-        if (files.length > 1) {
-            alert(`Maximum one file allowed to upload, but not ${files.length}!`)
-            return
+    onDrop(acceptedFiles) {
+        // Filter for PDF files only
+        const pdfFiles = acceptedFiles.filter(file => 
+            file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+        );
+        
+        if (pdfFiles.length === 0) {
+            alert('Please upload PDF files only.');
+            return;
         }
-        const reader = new FileReader();
-        const uploadFunction = this.state.uploadPdfFunction;
-        reader.onload = (evt) => {
-            const fileBuffer = evt.target.result;
-            uploadFunction(new Uint8Array(fileBuffer));
-        };
-        reader.readAsArrayBuffer(files[0]);
+
+        this.setState(prevState => ({
+            selectedFiles: [...prevState.selectedFiles, ...pdfFiles],
+            isDragActive: false
+        }));
+    }
+
+    removeFile(index) {
+        this.setState(prevState => ({
+            selectedFiles: prevState.selectedFiles.filter((_, i) => i !== index)
+        }));
+    }
+
+    clearAllFiles() {
+        this.setState({ selectedFiles: [] });
+    }
+
+    startConversion() {
+        if (this.state.selectedFiles.length > 0) {
+            this.props.storeFilesFunction(this.state.selectedFiles);
+        }
+    }
+
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
     }
 
     render() {
+        const { selectedFiles, isDragActive } = this.state;
+        const hasFiles = selectedFiles.length > 0;
+
         return (
             <div>
-              <Dropzone onDrop={ this.onDrop.bind(this) } multiple={ false } style={ { width: 400, height: 500, borderWidth: 2, borderColor: '#666', borderStyle: 'dashed', borderRadius: 5, display: 'table-cell', textAlign: 'center', verticalAlign: 'middle' } }>
-                <div className="container">
-                  <h2>Drop your PDF file here!</h2>
-                </div>
-                <h1><FaCloudUpload width={ 100 } height={ 100 } /></h1>
-                <br/>
-                <Alert bsStyle="warning">
-                  <i>This tool converts a PDF file into a Markdown text format! Simply drag & drop your PDF file on the upload area and go from there. Don't expect wonders, there are a lot of variances in generated PDF's from different tools and different ages. No matter how good the parser works for your PDF, you will have to invest a good amount of manuell work to complete it. Though this tool aims to be general purpose, it has been tested on a certain set of PDF's only.</i>
-                </Alert>
-              </Dropzone>
-              <br/>
-              <br/>
-              <br/>
-              <br/>
-              <br/>
-              <br/>
+                <Dropzone 
+                    onDrop={ this.onDrop.bind(this) } 
+                    multiple={ true }
+                    accept="application/pdf"
+                    onDragEnter={() => this.setState({ isDragActive: true })}
+                    onDragLeave={() => this.setState({ isDragActive: false })}
+                    style={{}}
+                >
+                    <div className={`dropzone ${isDragActive ? 'active' : ''}`}>
+                        <UploadIcon />
+                        <h2 className="dropzone-title">
+                            { isDragActive ? 'Drop your files here' : 'Drag & drop PDF files here' }
+                        </h2>
+                        <p className="dropzone-subtitle">
+                            or click to browse • Supports multiple files
+                        </p>
+                    </div>
+                </Dropzone>
+
+                { hasFiles && (
+                    <div className="file-list">
+                        { selectedFiles.map((file, index) => (
+                            <div key={index} className="file-item">
+                                <div className="file-info">
+                                    <FileIcon />
+                                    <div>
+                                        <div className="file-name">{ file.name }</div>
+                                        <div className="file-size">{ this.formatFileSize(file.size) }</div>
+                                    </div>
+                                </div>
+                                <button 
+                                    className="file-remove"
+                                    onClick={() => this.removeFile(index)}
+                                    title="Remove file"
+                                >
+                                    <CloseIcon />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                { hasFiles && (
+                    <div className="btn-group">
+                        <button 
+                            className="btn btn-secondary"
+                            onClick={ this.clearAllFiles.bind(this) }
+                        >
+                            Clear All
+                        </button>
+                        <button 
+                            className="btn btn-primary"
+                            onClick={ this.startConversion.bind(this) }
+                        >
+                            Convert {selectedFiles.length} {selectedFiles.length === 1 ? 'File' : 'Files'}
+                        </button>
+                    </div>
+                )}
             </div>
         );
     }
-
 }

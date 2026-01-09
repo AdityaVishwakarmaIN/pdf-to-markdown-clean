@@ -36,7 +36,8 @@
     "react-dropzone": "^3.9.2",
     "react-icons": "^2.2.3",
     "react-overlays": "^0.6.12",
-    "remarkable": "^1.7.1"
+    "remarkable": "^1.7.1",
+    "jszip": "^3.10.1"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.23.3",
