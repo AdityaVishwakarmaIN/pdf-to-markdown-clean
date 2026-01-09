@@ -39,3 +39,6 @@ Use the [issue tracker](https://github.com/jzillmann/pdf-to-markdown/issues) and
 ## Credits
 
 [pdf.js](https://mozilla.github.io/pdf.js/) - Mozilla's PDF parsing & rendering platform which is used as a raw parser
+
+---
+*Verified and ready for Cloudflare deployment — 2026-01-10 00:22:00*
